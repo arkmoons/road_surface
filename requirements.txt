@@ -1,0 +1,11 @@
+# ---- 运行时依赖（App 服务 + 模型推理 + 训练核心）----
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9
+torch>=2.2
+torchvision>=0.17
+Pillow>=10.0
+numpy>=1.26
+pandas>=2.0
+scikit-learn>=1.4
+mlflow>=2.10

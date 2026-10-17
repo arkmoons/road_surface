@@ -33,6 +33,8 @@ mlartifacts/
 *.pkl
 *.joblib
 *.onnx
+models/*
+!models/current.pt
 
 # ---- 编辑器 / 系统 ----
 .DS_Store
