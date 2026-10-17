@@ -1,0 +1,42 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ---- DVC ----
+# 原始数据由 DVC 管理；data/*.dvc 指针文件需要提交，
+# 因此这里不整体忽略 data/。DVC 会在 data/ 下生成自己的 .gitignore
+# 来忽略具体原始数据文件。
+.dvc/cache/
+.dvc/tmp/
+.dvc/config.local
+
+# ---- MLflow ----
+mlruns/
+mlartifacts/
+
+# ---- 环境与密钥 ----
+.env
+.env.*
+
+# ---- 数据库 / 模型产物 ----
+*.db
+*.sqlite*
+*.pkl
+*.joblib
+*.onnx
+
+# ---- 编辑器 / 系统 ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
