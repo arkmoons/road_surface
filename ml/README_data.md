@@ -1,66 +1,63 @@
-# Dataset Documentation (README_data.md)
+# The data
 
-## 1. What the data is
+## What it is
 
-Road-surface images used to train a 6-class surface-condition classifier.
+19,860 road photos (JPEG, 240x360, about 299 MB in total). The label is in the
+file name, for example:
 
-- **Format**: JPEG, RGB, 240×360, ~299 MB total
-- **Files**: 19,860 images
-- **Labels**: encoded in the filename, three levels:
-  `<timestamp>-<condition>-<material>-<roughness>.jpg`
+    ...-dry-asphalt-smooth.jpg
 
-The model target is the **top-level `condition`**, which has 6 classes:
+The three parts after the timestamp are condition, material and roughness.
+I only use the first one (condition) as the target. It has 6 values:
 
-| class | images | meaning |
-|---|---:|---|
-| `dry`         | 6560 | dry surface |
-| `wet`         | 5420 | wet surface |
-| `water`       | 5420 | standing water |
-| `fresh_snow`  | 820  | fresh snow |
-| `melted_snow` | 820  | melted snow |
-| `ice`         | 820  | ice |
+| condition | how many |
+|---|---:|
+| dry | 6560 |
+| wet | 5420 |
+| water | 5420 |
+| fresh_snow | 820 |
+| melted_snow | 820 |
+| ice | 820 |
 
-The second (`material`: asphalt / concrete / mud / gravel) and third
-(`roughness`: smooth / slight / severe) levels are kept in `manifest.csv`
-for reference but are **not** used as the training target.
+The other two levels (material, roughness) are still in `manifest.csv` but I
+don't train on them.
 
-## 2. Where the data comes from
+## Where it came from
 
-Delivered as `vali_20k.zip` (course / instructor-provided dataset).
+It was the `vali_20k.zip` file the course gave us. I didn't download it from a
+website myself.
 
-The raw archive is **not** committed to Git. Only small DVC pointer files are.
+## v1 and v2
 
-## 3. Dataset versions (DVC)
+- **v1** (`data/raw/`) is the data as it was, 19,860 images. It is imbalanced:
+  `dry` has about 8 times more images than `ice`.
+- **v2** (`data/processed/`) is a balanced copy I made with
+  `ml/data_pipeline.py`. I took 820 images from every class (the small classes
+  already have 820), so it has 4920 images, 820 per class.
 
-| version | directory | DVC md5 | files | commit |
-|---|---|---|---:|---|
-| v1 (raw) | `data/raw/` | `226e861c295a314f530950af6879f8f3` | 19,860 | `23ff9a7` |
-| v2 (balanced) | `data/processed/` | `e22aa7c0702400f7303f28d2c9ff17ca` | 4,920 | `299588f` |
+The idea of v2 was to fix the "too much dry" problem. In the end v2 was worse
+than v1 (see `README_experiments.md`), so I kept v2 only as an experiment.
 
-### What changed from v1 → v2
+## DVC
 
-v1 is the raw, **imbalanced** dataset (`dry` has 8× the images of `ice`).
-v2 is a **class-balanced** subset produced by `ml/data_pipeline.py`:
-- classes larger than 820 images are downsampled to 820
-- classes at/below 820 keep all their images
-- result: exactly **820 images per class** (4920 total), seed = 42
+19k images are too heavy for Git, so the images are tracked with DVC and stored
+on Azure. Each version has a small `.dvc` file in Git:
 
-The goal is to remove the majority-class bias that hurts macro-F1 on
-`fresh_snow` / `melted_snow` / `ice`.
+| version | folder | DVC md5 | images | commit that added it |
+|---|---|---|---|---|
+| v1 | `data/raw/` | `226e861c...` | 19,860 | `23ff9a7` |
+| v2 | `data/processed/` | `e22aa7c0...` | 4,920 | `299588f` |
 
-## 4. How to obtain the data
+To get the images:
 
 ```bash
-# requires Azure remote "myazure" configured in .dvc/config (+ local SAS token)
 dvc pull
 ```
 
-`dvc pull` restores `data/raw/` and `data/processed/` exactly as recorded by
-the checked-out commit. `git switch` changes *which* version is referenced;
-`dvc pull` materializes the corresponding image files.
+`git switch` only changes which `.dvc` file is checked out; `dvc pull` is what
+actually downloads the matching images.
 
-## 5. Label manifest
+## manifest.csv
 
-`data/manifest.csv` (Git-tracked) maps every raw filename to its three label
-levels. It has no image bytes — just the labels — so Git stores the mapping
-while DVC stores the images.
+`data/manifest.csv` is a small file in Git that maps every file name to its
+labels. It has no images, only the labels.
