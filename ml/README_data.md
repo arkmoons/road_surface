@@ -27,7 +27,6 @@ for reference but are **not** used as the training target.
 ## 2. Where the data comes from
 
 Delivered as `vali_20k.zip` (course / instructor-provided dataset).
-> TODO: fill in the original public source URL / paper if available.
 
 The raw archive is **not** committed to Git. Only small DVC pointer files are.
 

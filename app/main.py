@@ -1,16 +1,9 @@
 """FastAPI service that serves the road-surface-condition classifier.
 
-The model that is served is read from ``ml/registry/current_model.md`` (written
-by ``ml/train.py``). If that file is missing, the environment variables
-``MODEL_BACKBONE`` / ``MODEL_PATH`` are used instead.
-
-Endpoints
-    GET  /         -> simple upload form (HTML)
-    POST /predict  -> JSON: predicted condition + class probabilities
-    GET  /health   -> liveness check
+The served model is read from ``ml/registry/current_model.md`` (written by
+``ml/train.py``), falling back to the ``MODEL_BACKBONE`` / ``MODEL_PATH``
+environment variables.
 """
-
-from __future__ import annotations
 
 import io
 import os
@@ -145,6 +138,6 @@ async def predict(file: UploadFile = File(...)) -> JSONResponse:
     data = await file.read()
     try:
         img = Image.open(io.BytesIO(data))
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         raise HTTPException(status_code=400, detail=f"Invalid image: {exc}") from exc
     return JSONResponse(predict_image(img))

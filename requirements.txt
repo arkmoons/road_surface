@@ -1,4 +1,4 @@
-# ---- 运行时依赖（App 服务 + 模型推理 + 训练核心）----
+# Runtime dependencies (API + inference + training).
 fastapi>=0.110
 uvicorn[standard]>=0.29
 python-multipart>=0.0.9
