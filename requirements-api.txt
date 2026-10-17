@@ -1,0 +1,9 @@
+# Runtime/inference dependencies only.
+# Keep this minimal so the production image stays small (no MLflow/pandas/
+# scikit-learn/matplotlib, which are only needed for training).
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9
+torch>=2.2
+torchvision>=0.17
+Pillow>=10.0
