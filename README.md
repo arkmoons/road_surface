@@ -112,8 +112,9 @@ docker build -t road-surface:local .
 docker run -d --name road-surface -p 127.0.0.1:8000:8000 road-surface:local
 ```
 
-The image is slim (`python:3.12-slim`), installs runtime `requirements.txt` only,
-and bakes in `models/current.pt` + `ml/registry/current_model.md`.
+The image is slim (`python:3.12-slim`), installs only inference dependencies
+(`requirements-api.txt`) with the CPU build of torch, and bakes in
+`models/current.pt` + `ml/registry/current_model.md`.
 
 ## CI/CD (GitHub Actions)
 
