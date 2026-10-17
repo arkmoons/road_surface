@@ -9,9 +9,12 @@ ENV APP_ENV=${APP_ENV}
 
 WORKDIR /app
 
-# Install runtime deps first so this layer is cached when only code changes.
-COPY requirements.txt ./
-RUN python -m pip install --no-cache-dir -r requirements.txt
+# Inference deps only: install the CPU build of torch first so the image stays
+# small (the default Linux wheel drags in the whole NVIDIA CUDA stack, ~7 GB).
+COPY requirements-api.txt ./
+RUN python -m pip install --no-cache-dir torch torchvision \
+        --index-url https://download.pytorch.org/whl/cpu
+RUN python -m pip install --no-cache-dir -r requirements-api.txt
 
 # Application code, the production-model registry, and the trained weights.
 COPY app/ ./app/
