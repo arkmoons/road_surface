@@ -11,10 +11,8 @@ env/
 .coverage
 htmlcov/
 
-# ---- DVC ----
-# 原始数据由 DVC 管理；data/*.dvc 指针文件需要提交，
-# 因此这里不整体忽略 data/。DVC 会在 data/ 下生成自己的 .gitignore
-# 来忽略具体原始数据文件。
+# DVC: raw data lives in the DVC cache/remote; only the .dvc pointer files
+# and data/manifest.csv are committed. DVC writes data/.gitignore itself.
 .dvc/cache/
 .dvc/tmp/
 .dvc/config.local

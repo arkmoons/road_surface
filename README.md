@@ -137,16 +137,11 @@ feature/*  ->  dev  ->  staging  ->  main
 ### Commit → build → test → staging → prod
 
 ```
-git commit
-   │  push feature branch, open PR to dev/staging/main
-   ▼
-CI job: install deps → ruff lint → ruff format --check → pytest → docker build
-   │  PR green + reviewed  →  merge
-   ▼
-push to staging ──► CI passes ──► create staging .env (secrets) ──► build/push :staging
-   │  merge staging → main
-   ▼
-push to main ──► CI passes ──► create prod .env (secrets) ──► build/push :latest + :sha-<commit>
+1. git commit -> push feature branch -> open PR to dev/staging/main
+2. CI job: install deps -> ruff lint -> ruff format --check -> pytest -> docker build
+3. PR green + reviewed -> merge
+4. push/merge to staging -> CI passes -> create staging .env (secrets) -> build/push :staging
+5. merge staging -> main -> CI passes -> create prod .env (secrets) -> build/push :latest + :sha-<commit>
 ```
 
 ### Required repository secrets / variables
