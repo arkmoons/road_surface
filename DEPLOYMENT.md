@@ -1,72 +1,57 @@
-# Deployment (DEPLOYMENT.md)
+# Deployment
 
-This project builds and publishes Docker images automatically with GitHub Actions.
-No live server deployment is required by the project; the delivery step is a
-tested, environment-specific Docker image pushed to Docker Hub.
+The project doesn't run on a real server. The "deployment" is just GitHub
+Actions building the Docker image and pushing it to Docker Hub.
 
-## Pipelines in `.github/workflows/ci.yml`
+## The jobs
 
-| Job | Trigger | What it does |
-|---|---|---|
-| `test` | every PR to `dev`/`staging`/`main`, and every push to `staging`/`main` | install deps, `ruff check`, `ruff format --check`, `pytest`, `docker build` (verify) |
-| `deploy-staging` | push / merge to `staging` (after `test` passes) | create `staging` `.env` from staging secrets → build & push `road-surface:staging` |
-| `deploy-prod` | push / merge to `main` (after `test` passes) | create `production` `.env` from production secrets → build & push `road-surface:latest` and `road-surface:sha-<commit>` |
+All jobs are in `.github/workflows/ci.yml`.
 
-CI is a hard gate: `deploy-staging` and `deploy-prod` both declare
-`needs: test`, so a failing test never publishes an image.
+- **test** – runs on every PR to `dev`/`staging`/`main` and on every push to
+  `staging`/`main`. It installs the dependencies, runs ruff, runs pytest, and
+  does a `docker build` to check the image still builds.
+- **deploy-staging** – only on a push to `staging` (and only if `test` passed).
+  It writes a staging `.env`, then builds and pushes `road-surface:staging`.
+- **deploy-prod** – only on a push to `main` (and only if `test` passed). It
+  writes a production `.env`, then builds and pushes `road-surface:latest` and
+  `road-surface:sha-<commit>`.
 
-## Environment-specific `.env`
+Both deploy jobs have `needs: test`, so if the tests fail nothing is pushed.
 
-Each deploy job creates a `.env` from GitHub **environment secrets**:
+## The .env files
 
-```
-APP_ENV=staging
-MODEL_PATH=<STAGING_MODEL_PATH secret>
-```
+The staging job writes:
 
-```
-APP_ENV=production
-MODEL_PATH=<PROD_MODEL_PATH secret>
-```
+    APP_ENV=staging
+    MODEL_PATH=<STAGING_MODEL_PATH>
 
-The stage is also passed to the image as a build arg (`APP_ENV`), so the image
-knows which environment it was built for.
+and the production job writes:
+
+    APP_ENV=production
+    MODEL_PATH=<PROD_MODEL_PATH>
+
+This is how the project wants "environment-specific config from secrets".
 
 ## Image tags
 
-| Environment | Tag(s) |
-|---|---|
-| staging | `<dockerhub-user>/road-surface:staging`, `:staging-sha-<commit>` |
-| production | `<dockerhub-user>/road-surface:latest`, `:sha-<commit>` |
+- staging: `road-surface:staging` and `road-surface:staging-sha-<commit>`
+- production: `road-surface:latest` and `road-surface:sha-<commit>`
 
-## Required GitHub configuration
+## Secrets
 
-Create the repository secrets:
+I added these in GitHub under Settings -> Secrets and variables -> Actions:
 
-- `DOCKERHUB_USERNAME` — Docker Hub username
-- `DOCKERHUB_TOKEN` — Docker Hub personal access token (Repo Read & Write)
-- `STAGING_MODEL_PATH` — model path used by the staging `.env`
-- `PROD_MODEL_PATH` — model path used by the production `.env`
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN` (a Docker Hub token with Read & Write)
+- `STAGING_MODEL_PATH` (optional, has a default)
+- `PROD_MODEL_PATH` (optional, has a default)
 
-Create the GitHub **environments** `staging` and `production` (Settings →
-Environments) so the stage secrets and any protection rules apply.
-
-## Running a published image
+## Run the published image
 
 ```bash
 docker pull <dockerhub-user>/road-surface:latest
-docker run -d --name road-surface \
-  -p 127.0.0.1:8000:8000 \
-  <dockerhub-user>/road-surface:latest
-# open http://localhost:8000/
+docker run -d --name road-surface -p 127.0.0.1:8000:8000 <dockerhub-user>/road-surface:latest
 ```
 
-The image contains FastAPI, the raw HTML page, and the production weights
-(`models/current.pt`), so it is self-contained.
-
-## Local build (no CI)
-
-```bash
-docker build -t road-surface:local .
-docker run -d --name road-surface -p 127.0.0.1:8000:8000 road-surface:local
-```
+Then open http://localhost:8000/. The image already has the app, the page and
+the model, so nothing else is needed.
