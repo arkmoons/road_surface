@@ -1,68 +1,53 @@
-# Experiment Tracking (README_experiments.md)
+# My training runs
 
-All training runs are logged to MLflow (local SQLite backend `mlflow.db`). Every
-run records the git commit, the DVC data hash, hyper-parameters, validation/test
-metrics, per-class F1, the model weights and a confusion matrix.
+I logged every run to MLflow (the local `mlflow.db`). Each run stores the git
+commit, the DVC data hash, the hyper-parameters, the accuracy and macro-F1, the
+model weights and a confusion matrix.
 
-## What metric we optimise
+## Why macro-F1?
 
-The dataset has 6 classes and is imbalanced (`dry` has 8× the images of `ice`).
-Overall accuracy can look good while the model still fails on minority classes,
-so we optimise **macro-F1** (the unweighted mean of per-class F1). It rewards a
-model that is good on *every* class, not just the frequent ones. We still report
-accuracy for context.
+The 6 classes are not balanced (`dry` has about 8x the images of `ice`).
+Accuracy can look high while the model is still bad on the small classes
+(`ice` especially), so the number I care about is macro-F1, which averages every
+class equally. I still write accuracy too.
 
-## Runs
+## The runs
 
-| run | backbone | data | epochs | lr | test acc | test macro-F1 |
-|---|---|---|---|---:|---:|---:|
-| `baseline-v1-resnet18` | ResNet18 | v1 raw (imbalanced) | 5 | 1e-3 | 0.7649 | 0.7706 |
-| `improved-v2-resnet18` | ResNet18 | v2 balanced (4,920) | 8 | 1e-3 | 0.7480 | 0.7430 |
-| `improved-v1-efficientnet_b0` | EfficientNet-B0 | v1 raw | 8 | 5e-4 | **0.8812** | **0.8898** |
+| run | backbone | data | epochs | lr | acc | macro-F1 |
+|---|---|---|---:|---:|---:|---:|
+| baseline-v1-resnet18 | ResNet18 | v1 | 5 | 1e-3 | 0.765 | 0.771 |
+| improved-v2-resnet18 | ResNet18 | v2 | 8 | 1e-3 | 0.748 | 0.743 |
+| improved-v1-efficientnet_b0 | EfficientNet-B0 | v1 | 8 | 5e-4 | 0.881 | 0.890 |
 
-### Baseline — ResNet18 on v1
+### 1. Baseline (ResNet18 on v1)
 
-First usable model. With a fairly high learning rate the validation curve was
-noisy (val acc 0.70 → 0.68 → 0.77 → 0.71 → 0.78 across the 5 epochs). Test:
-acc 0.7649 / macro-F1 0.7706; class F1: dry 0.77, wet 0.69, water 0.82,
-fresh_snow 0.82, melted_snow 0.87, **ice 0.66**.
+First model that worked. Learning rate 1e-3 was a bit high, so the validation
+score jumped around (0.70, 0.68, 0.77, 0.71, 0.78). Test: acc 0.765,
+macro-F1 0.771. `ice` was the worst class (F1 0.66).
 
-### Balanced-data experiment — ResNet18 on v2
+### 2. Balanced data (ResNet18 on v2)
 
-Trained on the class-balanced v2 (820/class). This **did** help the minority
-classes (ice F1 0.66 → 0.78, melted_snow 0.87 → 0.94) but hurt the majority
-classes (dry 0.77 → 0.58) and the overall score (0.748 / 0.743). The reason:
-undersampling to 820/class leaves only 3,936 training images, so the model loses
-too much data. This is why v2 was kept as a documented dataset version and an
-honest ablation rather than the production model.
+On the balanced v2 the small classes got better (`ice` 0.66 -> 0.78,
+`melted_snow` 0.87 -> 0.94) but the big classes got worse (`dry` 0.77 -> 0.58).
+The overall score went down (0.748 / 0.743). The reason: taking only 820 per
+class left just 3936 training images, so there was not enough data. That's why
+I didn't use v2 for the final model.
 
-### Improved model — EfficientNet-B0 on v1
+### 3. Improved (EfficientNet-B0 on v1)
 
-A stronger backbone, more epochs and a lower learning rate on the full v1 data.
-Validation was stable and steadily improved (val acc 0.80 → 0.88, macro-F1
-0.80 → 0.90). Test: **acc 0.8812 / macro-F1 0.8898**; class F1: dry 0.91,
-wet 0.82, water 0.89, fresh_snow 0.92, melted_snow 0.95, ice 0.85.
+A stronger pretrained model, more epochs and a lower learning rate, on the full
+v1 data. The validation score was stable and went up (0.80 -> 0.88). Test:
+acc 0.881, macro-F1 0.890. Every class is now 0.82 or above.
 
-## Production-model decision
+## Which model I used
 
-**`improved-v1-efficientnet_b0`** (MLflow run `fadfc0188ea04a7c84459ba71abaf305`)
-is the production model:
+I used `improved-v1-efficientnet_b0` (run `fadfc0188ea04a7c84459ba71abaf305`).
+Reasons: it has the best macro-F1 and accuracy, and it trained on the full
+dataset instead of a small balanced copy. I copied its weights to
+`models/current.pt` and noted it in `ml/registry/current_model.md`.
 
-- best macro-F1 on the held-out test set (0.8898), best accuracy (0.8812);
-- trained on the full dataset (no data thrown away);
-- weights copied to `models/current.pt` and registered in
-  [`ml/registry/current_model.md`](registry/current_model.md).
-
-The balanced v2 remains a valid, versioned dataset (see `README_data.md`) and an
-instructive negative result: *balancing by undersampling is not worth it here.*
-
-## Reproduce / inspect
+## How to look at the runs
 
 ```bash
-# the runs are in the local SQLite backend
 .venv\Scripts\python.exe -m mlflow ui --backend-store-uri sqlite:///mlflow.db
-
-# reproduce the production model
-.venv\Scripts\python.exe ml/train.py --data-dir data/raw --backbone efficientnet_b0 \
-    --epochs 8 --lr 5e-4 --run-name improved-v1-efficientnet_b0
 ```
