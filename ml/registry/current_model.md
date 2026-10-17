@@ -1,10 +1,10 @@
-# Current production model
+﻿# Current production model
 
-- run_id: 10cd81d57eb540f397d5209fbc6f605f
-- run_name: improved-v2-resnet18
-- backbone: resnet18
-- data_dir: data/processed
-- data_version_dvc: e22aa7c0702400f7303f28d2c9ff17ca
-- test_acc: 0.7480
-- test_macro_f1: 0.7430
-- weights: models\improved-v2-resnet18_best.pt
+- run_id: fadfc0188ea04a7c84459ba71abaf305
+- run_name: improved-v1-efficientnet_b0
+- backbone: efficientnet_b0
+- data_dir: data/raw
+- data_version_dvc: 226e861c295a314f530950af6879f8f3
+- test_acc: 0.8812
+- test_macro_f1: 0.8898
+- weights: models/current.pt
