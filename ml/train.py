@@ -1,20 +1,4 @@
-"""Training script for the road-surface-condition classifier.
-
-Fine-tunes a pretrained CNN (transfer learning) and logs the run to MLflow.
-
-Every run logs:
-  * code version      : current git commit SHA
-  * dataset version   : DVC md5 hash of the data directory (.dvc file)
-  * hyperparameters   : backbone, learning rate, batch size, epochs, ...
-  * metrics           : accuracy, macro-F1, per-class F1
-  * artifacts         : best model weights (.pt) and confusion matrix (.png)
-
-Usage:
-  python ml/train.py --data-dir data/raw --experiment-name baseline
-  python ml/train.py --data-dir data/processed --experiment-name improved
-"""
-
-from __future__ import annotations
+"""Fine-tune a pretrained CNN and log the run to MLflow (params, metrics, weights)."""
 
 import argparse
 import re
@@ -48,9 +32,7 @@ MEAN = [0.485, 0.456, 0.406]
 STD = [0.229, 0.224, 0.225]
 
 
-# --------------------------------------------------------------------------- #
 # Helpers
-# --------------------------------------------------------------------------- #
 def get_git_sha() -> str:
     try:
         out = subprocess.check_output(
@@ -71,9 +53,7 @@ def get_dvc_md5(data_dir: str) -> str:
     return m.group(1) if m else "unknown"
 
 
-# --------------------------------------------------------------------------- #
 # Dataset
-# --------------------------------------------------------------------------- #
 class RoadSurfaceDataset(Dataset):
     def __init__(self, df: pd.DataFrame, root: Path, transform=None):
         self.df = df.reset_index(drop=True)
@@ -132,9 +112,7 @@ def stratified_split(df: pd.DataFrame, val_frac: float, test_frac: float, seed: 
     )
 
 
-# --------------------------------------------------------------------------- #
 # Model
-# --------------------------------------------------------------------------- #
 def build_model(backbone: str, num_classes: int) -> nn.Module:
     if backbone == "resnet18":
         model = models.resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
@@ -155,9 +133,7 @@ def build_model(backbone: str, num_classes: int) -> nn.Module:
     return model
 
 
-# --------------------------------------------------------------------------- #
 # Training / evaluation
-# --------------------------------------------------------------------------- #
 def train_one_epoch(model, loader, optimizer, criterion, device):
     model.train()
     running_loss, correct, total = 0.0, 0, 0
@@ -217,9 +193,7 @@ def save_confusion_matrix(labels, preds, path: Path):
     plt.close(fig)
 
 
-# --------------------------------------------------------------------------- #
 # Main
-# --------------------------------------------------------------------------- #
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", default="data/raw")

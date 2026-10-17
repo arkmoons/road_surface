@@ -1,16 +1,4 @@
-"""Data pipeline: build dataset versions for the road-surface classifier.
-
-The dataset labels are encoded in image filenames:
-    <timestamp>-<condition>-<material>-<roughness>.jpg
-
-This script reads ``data/manifest.csv`` (filename -> labels, tracked by Git)
-and produces a derived dataset directory (tracked by DVC).
-
-v1  data/raw/        the raw, as-delivered images (imbalanced classes)
-v2  data/processed/  a class-balanced subset used to reduce bias
-"""
-
-from __future__ import annotations
+"""Build the class-balanced v2 dataset from the raw v1 images."""
 
 import argparse
 import random

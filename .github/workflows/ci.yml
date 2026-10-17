@@ -1,4 +1,4 @@
-name: CI/CD
+﻿name: CI/CD
 
 on:
   pull_request:
@@ -10,10 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  # ------------------------------------------------------------------ #
   # CI: run for every PR to a protected branch AND every push to
   # staging/main. Tests, lint, and a Docker build must all pass.
-  # ------------------------------------------------------------------ #
   test:
     name: Test, lint and build
     runs-on: ubuntu-latest
@@ -43,10 +41,8 @@ jobs:
       - name: Build Docker image (verify it builds)
         run: docker build -t road-surface:ci .
 
-  # ------------------------------------------------------------------ #
   # CD (staging): merge to staging -> build & publish the staging image.
   # The stage .env is created from staging-specific GitHub secrets.
-  # ------------------------------------------------------------------ #
   deploy-staging:
     name: Build and publish staging image
     needs: test
@@ -83,10 +79,8 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/road-surface:staging
             ${{ secrets.DOCKERHUB_USERNAME }}/road-surface:staging-sha-${{ github.sha }}
 
-  # ------------------------------------------------------------------ #
   # CD (production): merge to main -> build & publish the production
   # image. The prod .env is created from production-specific secrets.
-  # ------------------------------------------------------------------ #
   deploy-prod:
     name: Build and publish production image
     needs: test
