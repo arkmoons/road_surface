@@ -13,11 +13,10 @@ Usage:
   python ml/train.py --data-dir data/raw --experiment-name baseline
   python ml/train.py --data-dir data/processed --experiment-name improved
 """
+
 from __future__ import annotations
 
 import argparse
-import io
-import os
 import re
 import subprocess
 import time
@@ -37,9 +36,9 @@ from torch.utils.data import DataLoader, Dataset
 from torchvision import models, transforms
 from torchvision.datasets.folder import default_loader
 from torchvision.models import (
-    ResNet18_Weights,
     EfficientNet_B0_Weights,
     MobileNet_V3_Small_Weights,
+    ResNet18_Weights,
 )
 
 CLASSES = ["dry", "wet", "water", "fresh_snow", "melted_snow", "ice"]
@@ -204,8 +203,14 @@ def save_confusion_matrix(labels, preds, path: Path):
     ax.set_ylabel("True")
     for i in range(len(CLASSES)):
         for j in range(len(CLASSES)):
-            ax.text(j, i, cm[i, j], ha="center", va="center",
-                    color="white" if cm[i, j] > cm.max() / 2 else "black")
+            ax.text(
+                j,
+                i,
+                cm[i, j],
+                ha="center",
+                va="center",
+                color="white" if cm[i, j] > cm.max() / 2 else "black",
+            )
     plt.colorbar(im)
     fig.tight_layout()
     fig.savefig(path, dpi=120)
@@ -237,31 +242,33 @@ def main():
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
 
-    device = torch.device(
-        args.device or ("cuda" if torch.cuda.is_available() else "cpu")
-    )
+    # Use a project-local SQLite backend so runs are reproducible from any CWD.
+    project_root = Path(__file__).resolve().parent.parent
+    mlflow.set_tracking_uri(f"sqlite:///{(project_root / 'mlflow.db').as_posix()}")
+
+    device = torch.device(args.device or ("cuda" if torch.cuda.is_available() else "cpu"))
     data_dir = Path(args.data_dir)
-    root = Path(".")
 
     # --- data ---
     df = pd.read_csv(args.manifest)
     df = df[df["filename"].isin(p.name for p in data_dir.glob("*.jpg"))]
     df = df[df["condition"].isin(CLASSES)].reset_index(drop=True)
     print(f"[data] {args.data_dir}: {len(df)} images")
-    train_df, val_df, test_df = stratified_split(
-        df, args.val_frac, args.test_frac, args.seed
-    )
+    train_df, val_df, test_df = stratified_split(df, args.val_frac, args.test_frac, args.seed)
     print(f"[split] train={len(train_df)} val={len(val_df)} test={len(test_df)}")
 
     train_ds = RoadSurfaceDataset(train_df, data_dir, make_transforms(args.img_size, True))
     val_ds = RoadSurfaceDataset(val_df, data_dir, make_transforms(args.img_size, False))
     test_ds = RoadSurfaceDataset(test_df, data_dir, make_transforms(args.img_size, False))
-    train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True,
-                              num_workers=args.num_workers)
-    val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False,
-                            num_workers=args.num_workers)
-    test_loader = DataLoader(test_ds, batch_size=args.batch_size, shuffle=False,
-                             num_workers=args.num_workers)
+    train_loader = DataLoader(
+        train_ds, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers
+    )
+    val_loader = DataLoader(
+        val_ds, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers
+    )
+    test_loader = DataLoader(
+        test_ds, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers
+    )
 
     # --- model ---
     model = build_model(args.backbone, len(CLASSES)).to(device)
@@ -270,7 +277,9 @@ def main():
 
     data_version = get_dvc_md5(args.data_dir)
     git_sha = get_git_sha()
-    run_name = args.run_name or f"{args.backbone}-{args.data_dir.replace('/', '-')}-{int(time.time())}"
+    run_name = (
+        args.run_name or f"{args.backbone}-{args.data_dir.replace('/', '-')}-{int(time.time())}"
+    )
 
     Path(args.output_dir).mkdir(parents=True, exist_ok=True)
     mlflow.set_experiment(args.experiment_name)

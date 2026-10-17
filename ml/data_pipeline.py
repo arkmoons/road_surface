@@ -9,10 +9,10 @@ and produces a derived dataset directory (tracked by DVC).
 v1  data/raw/        the raw, as-delivered images (imbalanced classes)
 v2  data/processed/  a class-balanced subset used to reduce bias
 """
+
 from __future__ import annotations
 
 import argparse
-import os
 import random
 import shutil
 from pathlib import Path
@@ -44,8 +44,7 @@ def build_balanced(
     rng = random.Random(seed)
     for cls in CLASSES:
         cls_files = [
-            f for f in df.loc[df["condition"] == cls, "filename"]
-            if (src_dir / f).exists()
+            f for f in df.loc[df["condition"] == cls, "filename"] if (src_dir / f).exists()
         ]
         if len(cls_files) > per_class:
             picked = rng.sample(cls_files, per_class)
