@@ -1,5 +1,3 @@
-"""Fine-tune a pretrained CNN and log the run to MLflow (params, metrics, weights)."""
-
 import argparse
 import re
 import subprocess
@@ -7,8 +5,7 @@ import time
 from pathlib import Path
 
 import matplotlib
-
-matplotlib.use("Agg")  # no display needed
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import mlflow
 import numpy as np
@@ -32,7 +29,6 @@ MEAN = [0.485, 0.456, 0.406]
 STD = [0.229, 0.224, 0.225]
 
 
-# Helpers
 def get_git_sha() -> str:
     try:
         out = subprocess.check_output(
@@ -44,7 +40,6 @@ def get_git_sha() -> str:
 
 
 def get_dvc_md5(data_dir: str) -> str:
-    """Read the md5 that DVC recorded for ``data_dir`` in its .dvc file."""
     dvc_file = Path(f"{data_dir}.dvc")
     if not dvc_file.exists():
         return "unknown"
@@ -53,7 +48,6 @@ def get_dvc_md5(data_dir: str) -> str:
     return m.group(1) if m else "unknown"
 
 
-# Dataset
 class RoadSurfaceDataset(Dataset):
     def __init__(self, df: pd.DataFrame, root: Path, transform=None):
         self.df = df.reset_index(drop=True)
@@ -93,7 +87,6 @@ def make_transforms(img_size: int, train: bool):
 
 
 def stratified_split(df: pd.DataFrame, val_frac: float, test_frac: float, seed: int):
-    """Split per-class so each split keeps the same label distribution."""
     train, val, test = [], [], []
     rng = np.random.default_rng(seed)
     for _, group in df.groupby("condition"):
@@ -112,7 +105,6 @@ def stratified_split(df: pd.DataFrame, val_frac: float, test_frac: float, seed: 
     )
 
 
-# Model
 def build_model(backbone: str, num_classes: int) -> nn.Module:
     if backbone == "resnet18":
         model = models.resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
@@ -133,7 +125,6 @@ def build_model(backbone: str, num_classes: int) -> nn.Module:
     return model
 
 
-# Training / evaluation
 def train_one_epoch(model, loader, optimizer, criterion, device):
     model.train()
     running_loss, correct, total = 0.0, 0, 0
@@ -193,7 +184,6 @@ def save_confusion_matrix(labels, preds, path: Path):
     plt.close(fig)
 
 
-# Main
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", default="data/raw")
@@ -216,14 +206,12 @@ def main():
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
 
-    # Use a project-local SQLite backend so runs are reproducible from any CWD.
     project_root = Path(__file__).resolve().parent.parent
     mlflow.set_tracking_uri(f"sqlite:///{(project_root / 'mlflow.db').as_posix()}")
 
     device = torch.device(args.device or ("cuda" if torch.cuda.is_available() else "cpu"))
     data_dir = Path(args.data_dir)
 
-    # --- data ---
     df = pd.read_csv(args.manifest)
     df = df[df["filename"].isin(p.name for p in data_dir.glob("*.jpg"))]
     df = df[df["condition"].isin(CLASSES)].reset_index(drop=True)
@@ -244,7 +232,6 @@ def main():
         test_ds, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers
     )
 
-    # --- model ---
     model = build_model(args.backbone, len(CLASSES)).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
@@ -303,7 +290,6 @@ def main():
                 best_val_acc = val_acc
                 best_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
 
-        # --- final evaluation on test set with the best weights ---
         model.load_state_dict(best_state)
         test_acc, test_f1, per_f1, labels, preds = evaluate(model, test_loader, device)
         mlflow.log_metrics({"test_acc": test_acc, "test_macro_f1": test_f1})
@@ -311,7 +297,6 @@ def main():
             mlflow.log_metric(f"test_f1_{cls}", float(f1))
         print(f"[test] acc={test_acc:.4f} macro_f1={test_f1:.4f}")
 
-        # --- artifacts ---
         out_weights = Path(args.output_dir) / f"{run_name}_best.pt"
         torch.save(best_state, out_weights)
         cm_path = Path(args.output_dir) / f"{run_name}_confusion.png"
@@ -323,7 +308,6 @@ def main():
         print(f"[artifacts] {out_weights}")
         print(f"[mlflow] run_id={run.info.run_id}")
 
-    # persist the "which model is prod" pointer for the app
     prod_path = Path("ml/registry/current_model.md")
     prod_path.write_text(
         f"# Current production model\n\n"

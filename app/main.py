@@ -1,10 +1,3 @@
-"""FastAPI service that serves the road-surface-condition classifier.
-
-The served model is read from ``ml/registry/current_model.md`` (written by
-``ml/train.py``), falling back to the ``MODEL_BACKBONE`` / ``MODEL_PATH``
-environment variables.
-"""
-
 import io
 import os
 import re
@@ -44,7 +37,6 @@ def build_model(backbone: str, num_classes: int = len(CLASSES)) -> nn.Module:
 
 
 def resolve_model() -> tuple[str, str]:
-    """Return (backbone, weights_path) for the production model."""
     backbone = os.environ.get("MODEL_BACKBONE", "resnet18")
     weights = os.environ.get("MODEL_PATH", "models/current.pt")
     if REGISTRY_FILE.exists():
