@@ -1,10 +1,8 @@
-"""Unit tests for model construction and image preprocessing."""
-
 import pytest
 import torch
 from PIL import Image
 
-import app.main as main_mod
+import APP.main as main_mod
 
 
 def test_class_list_is_the_six_conditions():
@@ -31,8 +29,5 @@ def test_preprocess_produces_expected_tensor_shape():
 
 
 def test_preprocess_accepts_grayscale_and_converts_to_rgb():
-    # predict_image() calls .convert("RGB"); a grayscale image must not crash
     gray = Image.new("L", (100, 100), color=77)
-
-    # the shape just has to survive conversion
     assert gray.convert("RGB").size == (100, 100)

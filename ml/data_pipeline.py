@@ -1,5 +1,3 @@
-"""Build the class-balanced v2 dataset from the raw v1 images."""
-
 import argparse
 import random
 import shutil
@@ -7,7 +5,6 @@ from pathlib import Path
 
 import pandas as pd
 
-# The 6 target classes we train on (top-level label in the filename).
 CLASSES = ["dry", "wet", "water", "fresh_snow", "melted_snow", "ice"]
 
 
@@ -18,11 +15,6 @@ def build_balanced(
     per_class: int,
     seed: int = 42,
 ) -> None:
-    """Copy a fixed number of images per class into ``dst_dir``.
-
-    Classes larger than ``per_class`` are downsampled; smaller classes keep
-    all of their images. The result is a class-balanced version of the data.
-    """
     df = pd.read_csv(manifest)
     if dst_dir.exists():
         shutil.rmtree(dst_dir)
@@ -43,7 +35,6 @@ def build_balanced(
         selected.extend(picked)
         print(f"  {cls:12s} selected {len(picked):>5} images")
 
-    # Write a manifest for the derived version, next to the raw manifest.
     sel_set = set(selected)
     proc_df = df[df["filename"].isin(sel_set)].sort_values("filename")
     proc_manifest = manifest.parent / "processed_manifest.csv"
