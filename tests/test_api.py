@@ -6,7 +6,7 @@ import torch.nn as nn
 from fastapi.testclient import TestClient
 from PIL import Image
 
-import APP.main as main_mod
+import app.main as main_mod
 
 
 class DummyModel(nn.Module):

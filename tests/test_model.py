@@ -2,7 +2,7 @@ import pytest
 import torch
 from PIL import Image
 
-import APP.main as main_mod
+import app.main as main_mod
 
 
 def test_class_list_is_the_six_conditions():
