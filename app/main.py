@@ -89,7 +89,7 @@ def predict_image(pil_image: Image.Image) -> dict:
     }
 
 
-app = FastAPI(title="Road Surface Condition Classifier", version="1.0")
+app = FastAPI(title="路面状态识别", version="1.0")
 
 
 @app.get("/health")
@@ -100,11 +100,11 @@ def health() -> dict:
 @app.get("/", response_class=HTMLResponse)
 def index() -> str:
     return """<!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Road Surface Classifier</title>
+<title>路面状态识别</title>
 <style>
   body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
          max-width: 640px; margin: 48px auto; padding: 0 16px; color: #1f2937; background: #f8fafc;
@@ -125,18 +125,19 @@ def index() -> str:
 </style>
 </head>
 <body>
-<h1>Road Surface Condition Classifier</h1>
-<p>Upload a road photo; the model returns one of: dry, wet, water, fresh_snow, melted_snow, ice.</p>
+<h1>路面状态识别</h1>
+<p>上传一张路面照片，模型会判断路面状态：干燥 / 潮湿 / 积水 / 新雪 / 融雪 / 结冰。</p>
 <div class="box">
   <input type="file" id="file" accept="image/*">
-  <button id="go" disabled>Predict</button>
+  <button id="go" disabled>预测</button>
   <img id="preview" alt="">
   <div class="result" id="result">
-    <div class="line">Prediction: <b id="label"></b> <span id="conf"></span></div>
+    <div class="line">预测结果：<b id="label"></b> <span id="conf"></span></div>
     <ul id="probs"></ul>
   </div>
 </div>
 <script>
+var CN = { dry: '干燥', wet: '潮湿', water: '积水', fresh_snow: '新雪', melted_snow: '融雪', ice: '结冰' };
 var file = document.getElementById('file');
 var go = document.getElementById('go');
 var preview = document.getElementById('preview');
@@ -157,28 +158,28 @@ go.addEventListener('click', async function () {
   var f = file.files[0];
   if (!f) return;
   go.disabled = true;
-  go.textContent = 'Predicting...';
+  go.textContent = '预测中...';
   try {
     var fd = new FormData();
     fd.append('file', f);
     var r = await fetch('/predict', { method: 'POST', body: fd });
     var j = await r.json();
     if (!r.ok) { throw new Error(j.detail || ('HTTP ' + r.status)); }
-    label.textContent = j.condition;
-    conf.textContent = '(' + (j.confidence * 100).toFixed(1) + '%)';
+    label.textContent = CN[j.condition] || j.condition;
+    conf.textContent = '（置信度 ' + (j.confidence * 100).toFixed(1) + '%）';
     probs.innerHTML = '';
     var entries = Object.entries(j.probabilities).sort(function (a, b) { return b[1] - a[1]; });
     entries.forEach(function (e) {
       var li = document.createElement('li');
-      li.textContent = e[0] + ': ' + (e[1] * 100).toFixed(1) + '%';
+      li.textContent = (CN[e[0]] || e[0]) + '：' + (e[1] * 100).toFixed(1) + '%';
       probs.appendChild(li);
     });
     result.classList.add('show');
   } catch (e) {
-    alert('Prediction failed: ' + e.message);
+    alert('预测失败：' + e.message);
   } finally {
     go.disabled = false;
-    go.textContent = 'Predict';
+    go.textContent = '预测';
   }
 });
 </script>
@@ -189,10 +190,10 @@ go.addEventListener('click', async function () {
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)) -> JSONResponse:
     if not file.content_type or not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="Please upload an image file.")
+        raise HTTPException(status_code=400, detail="请上传图片文件。")
     data = await file.read()
     try:
         img = Image.open(io.BytesIO(data))
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=f"Invalid image: {exc}") from exc
+        raise HTTPException(status_code=400, detail=f"图片无效：{exc}") from exc
     return JSONResponse(predict_image(img))
