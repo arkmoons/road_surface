@@ -107,20 +107,21 @@ def index() -> str:
 <title>Road Surface Classifier</title>
 <style>
   body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-         max-width: 640px; margin: 48px auto; padding: 0 16px; color: #1f2937; background: #f8fafc; }
-  h1 { font-size: 24px; margin: 0 0 6px; }
+         max-width: 640px; margin: 48px auto; padding: 0 16px; color: #1f2937; background: #f8fafc;
+         font-size: 17px; }
+  h1 { font-size: 28px; margin: 0 0 6px; }
   p { color: #6b7280; margin: 0 0 24px; }
   .box { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px; }
   input[type=file] { margin-bottom: 12px; }
-  button { padding: 8px 16px; font-size: 15px; color: #fff; background: #2563eb;
+  button { padding: 9px 18px; font-size: 16px; color: #fff; background: #2563eb;
            border: 0; border-radius: 6px; cursor: pointer; }
   button:disabled { background: #9ca3af; cursor: not-allowed; }
   img { display: none; max-width: 100%; max-height: 220px; margin-top: 12px; border-radius: 6px; }
   .result { display: none; margin-top: 16px; }
   .result.show { display: block; }
-  .result .line { font-size: 18px; }
+  .result .line { font-size: 20px; }
   .result b { color: #16a34a; }
-  ul { margin: 8px 0 0; padding-left: 18px; color: #4b5563; font-size: 14px; }
+  ul { margin: 8px 0 0; padding-left: 18px; color: #4b5563; font-size: 15px; }
 </style>
 </head>
 <body>
