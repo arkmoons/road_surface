@@ -1,6 +1,6 @@
 # 路面状态识别
 
-这是我的 MLOps 课程大作业。程序输入一张路面照片，输出它的路面状态，一共 6 类：dry（干燥）、wet（潮湿）、water（积水）、fresh_snow（新雪）、melted_snow（融雪）、ice（结冰）。
+程序输入一张路面照片，输出它的路面状态，一共 6 类：dry（干燥）、wet（潮湿）、water（积水）、fresh_snow（新雪）、melted_snow（融雪）、ice（结冰）。
 
 模型是我自己微调的 EfficientNet-B0。外面套了课程要求的一套流程：Git 分支、DVC 管数据、MLflow 记实验、Docker 打包、GitHub Actions 做 CI/CD。
 
