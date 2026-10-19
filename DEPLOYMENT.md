@@ -1,57 +1,50 @@
-# Deployment
+# 部署说明
 
-The project doesn't run on a real server. The "deployment" is just GitHub
-Actions building the Docker image and pushing it to Docker Hub.
+这个项目没有部署到真实服务器上。"部署"就是 GitHub Actions 构建 Docker 镜像并推送到 Docker Hub。
 
-## The jobs
+## 任务（jobs）
 
-All jobs are in `.github/workflows/ci.yml`.
+所有任务都在 `.github/workflows/ci.yml` 里。
 
-- **test** – runs on every PR to `dev`/`staging`/`main` and on every push to
-  `staging`/`main`. It installs the dependencies, runs ruff, runs pytest, and
-  does a `docker build` to check the image still builds.
-- **deploy-staging** – only on a push to `staging` (and only if `test` passed).
-  It writes a staging `.env`, then builds and pushes `road-surface:staging`.
-- **deploy-prod** – only on a push to `main` (and only if `test` passed). It
-  writes a production `.env`, then builds and pushes `road-surface:latest` and
-  `road-surface:sha-<commit>`.
+- **test**：对 `dev`/`staging`/`main` 的每个 PR、以及 push 到 `staging`/`main` 时运行。装依赖、跑 ruff、跑 pytest，再 `docker build` 确认镜像能构建。
+- **deploy-staging**：只在 push 到 `staging` 时运行（且要 `test` 先通过）。写 staging `.env`，然后构建并推送 `road-surface:staging`。
+- **deploy-prod**：只在 push 到 `main` 时运行（且要 `test` 先通过）。写 production `.env`，然后构建并推送 `road-surface:latest` 和 `road-surface:sha-<commit>`。
 
-Both deploy jobs have `needs: test`, so if the tests fail nothing is pushed.
+两个部署任务都有 `needs: test`，所以测试不过就不会推送镜像。
 
-## The .env files
+## `.env` 文件
 
-The staging job writes:
+staging 任务写：
 
     APP_ENV=staging
     MODEL_PATH=<STAGING_MODEL_PATH>
 
-and the production job writes:
+production 任务写：
 
     APP_ENV=production
     MODEL_PATH=<PROD_MODEL_PATH>
 
-This is how the project wants "environment-specific config from secrets".
+这就是项目要求的"从 secrets 生成各环境的配置"。
 
-## Image tags
+## 镜像 tag
 
-- staging: `road-surface:staging` and `road-surface:staging-sha-<commit>`
-- production: `road-surface:latest` and `road-surface:sha-<commit>`
+- staging：`road-surface:staging` 和 `road-surface:staging-sha-<commit>`
+- production：`road-surface:latest` 和 `road-surface:sha-<commit>`
 
 ## Secrets
 
-I added these in GitHub under Settings -> Secrets and variables -> Actions:
+我在 GitHub 的 Settings → Secrets and variables → Actions 里加了：
 
 - `DOCKERHUB_USERNAME`
-- `DOCKERHUB_TOKEN` (a Docker Hub token with Read & Write)
-- `STAGING_MODEL_PATH` (optional, has a default)
-- `PROD_MODEL_PATH` (optional, has a default)
+- `DOCKERHUB_TOKEN`（Docker Hub 的 Read & Write token）
+- `STAGING_MODEL_PATH`（可选，有默认值）
+- `PROD_MODEL_PATH`（可选，有默认值）
 
-## Run the published image
+## 运行已发布的镜像
 
 ```bash
 docker pull <dockerhub-user>/road-surface:latest
 docker run -d --name road-surface -p 127.0.0.1:8000:8000 <dockerhub-user>/road-surface:latest
 ```
 
-Then open http://localhost:8000/. The image already has the app, the page and
-the model, so nothing else is needed.
+然后打开 http://localhost:8000/。镜像里已经有应用、页面和模型，不需要别的东西。

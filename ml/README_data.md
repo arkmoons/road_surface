@@ -1,16 +1,14 @@
-# The data
+# 数据
 
-## What it is
+## 是什么
 
-19,860 road photos (JPEG, 240x360, about 299 MB in total). The label is in the
-file name, for example:
+19,860 张路面照片（JPEG，240x360，总共约 299 MB）。标签在文件名里，例如：
 
     ...-dry-asphalt-smooth.jpg
 
-The three parts after the timestamp are condition, material and roughness.
-I only use the first one (condition) as the target. It has 6 values:
+时间戳后面的三段分别是 condition（状态）、material（材质）、roughness（粗糙度）。我只用第一段（condition）作为目标，它有 6 个值：
 
-| condition | how many |
+| condition | 数量 |
 |---|---:|
 | dry | 6560 |
 | wet | 5420 |
@@ -19,45 +17,36 @@ I only use the first one (condition) as the target. It has 6 values:
 | melted_snow | 820 |
 | ice | 820 |
 
-The other two levels (material, roughness) are still in `manifest.csv` but I
-don't train on them.
+另外两级（材质、粗糙度）仍然留在 `manifest.csv` 里，但我不训练它们。
 
-## Where it came from
+## 数据来源
 
-It was the `vali_20k.zip` file the course gave us. I didn't download it from a
-website myself.
+是课程给的 `vali_20k.zip`。我自己没有从网站上下载。
 
-## v1 and v2
+## v1 和 v2
 
-- **v1** (`data/raw/`) is the data as it was, 19,860 images. It is imbalanced:
-  `dry` has about 8 times more images than `ice`.
-- **v2** (`data/processed/`) is a balanced copy I made with
-  `ml/data_pipeline.py`. I took 820 images from every class (the small classes
-  already have 820), so it has 4920 images, 820 per class.
+- **v1**（`data/raw/`）是原样的数据，19,860 张。它不平衡：`dry` 大约是 `ice` 的 8 倍。
+- **v2**（`data/processed/`）是我用 `ml/data_pipeline.py` 做的平衡版。每类抽 820 张（小类本来就只有 820），所以一共 4920 张，每类 820。
 
-The idea of v2 was to fix the "too much dry" problem. In the end v2 was worse
-than v1 (see `README_experiments.md`), so I kept v2 only as an experiment.
+v2 的想法是解决"dry 太多"的问题。结果 v2 反而比 v1 差（见 `README_experiments.md`），所以 v2 只作为一个实验保留。
 
 ## DVC
 
-19k images are too heavy for Git, so the images are tracked with DVC and stored
-on Azure. Each version has a small `.dvc` file in Git:
+1.9 万张图片对 Git 来说太重了，所以用 DVC 管理，存在 Azure 上。每个版本在 Git 里有一个小的 `.dvc` 文件：
 
-| version | folder | DVC md5 | images | commit that added it |
+| 版本 | 目录 | DVC md5 | 图片数 | 提交它的 commit |
 |---|---|---|---|---|
 | v1 | `data/raw/` | `226e861c...` | 19,860 | `23ff9a7` |
 | v2 | `data/processed/` | `e22aa7c0...` | 4,920 | `299588f` |
 
-To get the images:
+取回图片：
 
 ```bash
 dvc pull
 ```
 
-`git switch` only changes which `.dvc` file is checked out; `dvc pull` is what
-actually downloads the matching images.
+`git switch` 只是切换 checkout 的 `.dvc` 文件；真正下载对应图片的是 `dvc pull`。
 
 ## manifest.csv
 
-`data/manifest.csv` is a small file in Git that maps every file name to its
-labels. It has no images, only the labels.
+`data/manifest.csv` 是 Git 里的小文件，记录每个文件名对应的标签。它不含图片，只有标签。

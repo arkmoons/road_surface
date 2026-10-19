@@ -1,38 +1,37 @@
-# Which code and data made the final model
+# 最终模型是用哪份代码、哪份数据训出来的
 
-This note answers "where did this model come from?".
+这份说明回答"这个模型从哪来"。
 
-## The model
+## 模型
 
-- file: `models/current.pt`
-- backbone: EfficientNet-B0 (pretrained on ImageNet, then fine-tuned)
-- MLflow run: `improved-v1-efficientnet_b0` (id `fadfc0188ea04a7c84459ba71abaf305`)
-- test accuracy: 0.881, test macro-F1: 0.890
-- also listed in `ml/registry/current_model.md`
+- 文件：`models/current.pt`
+- 骨干网络：EfficientNet-B0（先在 ImageNet 上预训练，再微调）
+- MLflow run：`improved-v1-efficientnet_b0`（id `fadfc0188ea04a7c84459ba71abaf305`）
+- 测试集准确率：0.881，测试集 macro-F1：0.890
+- 也记录在 `ml/registry/current_model.md`
 
-## The code
+## 代码
 
-- training script: `ml/train.py`
-- git commit: `7afc88e`. I didn't change `ml/train.py` after that commit.
-- every MLflow run stores the git SHA as `code_version_git`, so I could check
-  this from the run too.
+- 训练脚本：`ml/train.py`
+- git commit：`7afc88e`。之后我没有再改 `ml/train.py`。
+- 每次 MLflow 训练都会把 git SHA 记成 `code_version_git`，所以也能从 run 里核对。
 
-## The data
+## 数据
 
-- version: v1 (raw)
-- DVC md5: `226e861c295a314f530950af6879f8f3`
-- pointer file: `data/raw.dvc` (first added in commit `23ff9a7`)
-- every MLflow run stores this hash as `data_version_dvc`.
+- 版本：v1（原始）
+- DVC md5：`226e861c295a314f530950af6879f8f3`
+- 指针文件：`data/data_v1.csv.dvc`（首次在 commit `23ff9a7` 加入）
+- 每次 MLflow 训练都会把这个哈希记成 `data_version_dvc`。
 
-## Settings used
+## 使用的设置
 
-- epochs 8, batch size 32, learning rate 5e-4, image size 224, seed 42
-- GPU: RTX 4070 Laptop
+- 轮数 8，batch 32，学习率 5e-4，图片尺寸 224，随机种子 42
+- GPU：RTX 4070 Laptop
 
-## How to train it again
+## 怎么重新训练
 
 ```bash
-git checkout 23ff9a7 -- data/raw.dvc   # the data version used
+git checkout 23ff9a7 -- data/data_v1.csv.dvc   # 用当时的数据版本
 dvc pull
 
 .venv\Scripts\python.exe ml/train.py --data-dir data/raw --backbone efficientnet_b0 \
@@ -41,4 +40,4 @@ dvc pull
 cp models/improved-v1-efficientnet_b0_best.pt models/current.pt
 ```
 
-The full history (git SHA, data hash, params, metrics) is in `mlflow.db`.
+完整历史（git SHA、数据哈希、参数、指标）都在 `mlflow.db` 里。
