@@ -106,100 +106,57 @@ def index() -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Road Surface Classifier</title>
 <style>
-  :root { --bg:#0f172a; --card:#1e293b; --line:#334155; --text:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --ok:#34d399; }
-  * { box-sizing:border-box; }
-  body { margin:0; min-height:100vh; padding:32px 16px; color:var(--text);
-         background:radial-gradient(circle at 15% -10%, #1e40af55, transparent 45%), var(--bg);
-         font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-         display:flex; justify-content:center; }
-  .wrap { width:100%; max-width:760px; }
-  h1 { margin:0 0 6px; font-size:28px; }
-  .sub { margin:0 0 24px; color:var(--muted); line-height:1.5; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:24px; }
-  .drop { display:block; border:2px dashed #475569; border-radius:12px; padding:28px; text-align:center;
-          cursor:pointer; transition:border-color .2s, background .2s; }
-  .drop:hover, .drop.drag { border-color:var(--accent); background:#0ea5e911; }
-  .drop img { max-width:100%; max-height:300px; border-radius:8px; margin-top:14px; display:none; }
-  .hint { color:var(--muted); font-size:14px; margin-top:6px; }
-  button { width:100%; margin-top:16px; padding:13px; font-size:16px; font-weight:600; color:#0f172a;
-           background:var(--accent); border:0; border-radius:10px; cursor:pointer; }
-  button:disabled { opacity:.45; cursor:not-allowed; }
-  .result { display:none; margin-top:24px; }
-  .result.show { display:block; }
-  .pred { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
-  .pred .label { font-size:32px; font-weight:700; color:var(--ok); }
-  .pred .conf { color:var(--muted); }
-  .bars { display:grid; gap:8px; margin-top:16px; }
-  .bar { display:grid; grid-template-columns:120px 1fr 56px; gap:10px; align-items:center; font-size:14px; }
-  .track { height:10px; background:var(--line); border-radius:6px; overflow:hidden; }
-  .fill { height:100%; width:0; background:linear-gradient(90deg,var(--accent),var(--ok)); border-radius:6px;
-          transition:width .5s ease; }
-  .pct { text-align:right; color:var(--muted); }
-  .err { display:none; margin-top:16px; color:#f87171; }
-  .err.show { display:block; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         max-width: 640px; margin: 48px auto; padding: 0 16px; color: #1f2937; background: #f8fafc; }
+  h1 { font-size: 24px; margin: 0 0 6px; }
+  p { color: #6b7280; margin: 0 0 24px; }
+  .box { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px; }
+  input[type=file] { margin-bottom: 12px; }
+  button { padding: 8px 16px; font-size: 15px; color: #fff; background: #2563eb;
+           border: 0; border-radius: 6px; cursor: pointer; }
+  button:disabled { background: #9ca3af; cursor: not-allowed; }
+  img { display: none; max-width: 100%; max-height: 220px; margin-top: 12px; border-radius: 6px; }
+  .result { display: none; margin-top: 16px; }
+  .result.show { display: block; }
+  .result .line { font-size: 18px; }
+  .result b { color: #16a34a; }
+  ul { margin: 8px 0 0; padding-left: 18px; color: #4b5563; font-size: 14px; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>Road Surface Condition Classifier</h1>
-  <p class="sub">上传一张路面照片，模型会判断路面状态：dry / wet / water / fresh_snow / melted_snow / ice。</p>
-  <div class="card">
-    <label class="drop" id="drop">
-      <input type="file" id="file" accept="image/*" hidden>
-      <div><b>点击选择图片</b>，或把图片拖到这里</div>
-      <div class="hint">支持 JPG / PNG</div>
-      <img id="preview" alt="">
-    </label>
-    <button id="go" disabled>Predict</button>
-    <div class="err" id="err"></div>
-    <div class="result" id="result">
-      <div class="pred">
-        <span class="label" id="label"></span>
-        <span class="conf" id="conf"></span>
-      </div>
-      <div class="bars" id="bars"></div>
-    </div>
+<h1>Road Surface Condition Classifier</h1>
+<p>Upload a road photo; the model returns one of: dry, wet, water, fresh_snow, melted_snow, ice.</p>
+<div class="box">
+  <input type="file" id="file" accept="image/*">
+  <button id="go" disabled>Predict</button>
+  <img id="preview" alt="">
+  <div class="result" id="result">
+    <div class="line">Prediction: <b id="label"></b> <span id="conf"></span></div>
+    <ul id="probs"></ul>
   </div>
 </div>
 <script>
-var fileInput = document.getElementById('file');
-var drop = document.getElementById('drop');
-var preview = document.getElementById('preview');
+var file = document.getElementById('file');
 var go = document.getElementById('go');
-var err = document.getElementById('err');
+var preview = document.getElementById('preview');
 var result = document.getElementById('result');
 var label = document.getElementById('label');
 var conf = document.getElementById('conf');
-var bars = document.getElementById('bars');
+var probs = document.getElementById('probs');
 
-function showError(msg) { err.textContent = msg; err.classList.add('show'); }
-function clearError() { err.classList.remove('show'); }
-
-fileInput.addEventListener('change', function () {
-  var f = fileInput.files[0];
+file.addEventListener('change', function () {
+  var f = file.files[0];
   if (!f) return;
   preview.src = URL.createObjectURL(f);
   preview.style.display = 'block';
   go.disabled = false;
 });
 
-drop.addEventListener('dragover', function (e) { e.preventDefault(); drop.classList.add('drag'); });
-drop.addEventListener('dragleave', function () { drop.classList.remove('drag'); });
-drop.addEventListener('drop', function (e) {
-  e.preventDefault();
-  drop.classList.remove('drag');
-  if (e.dataTransfer.files.length) {
-    fileInput.files = e.dataTransfer.files;
-    fileInput.dispatchEvent(new Event('change'));
-  }
-});
-
 go.addEventListener('click', async function () {
-  var f = fileInput.files[0];
+  var f = file.files[0];
   if (!f) return;
   go.disabled = true;
   go.textContent = 'Predicting...';
-  clearError();
   try {
     var fd = new FormData();
     fd.append('file', f);
@@ -207,23 +164,17 @@ go.addEventListener('click', async function () {
     var j = await r.json();
     if (!r.ok) { throw new Error(j.detail || ('HTTP ' + r.status)); }
     label.textContent = j.condition;
-    conf.textContent = '(conf ' + (j.confidence * 100).toFixed(1) + '%)';
-    bars.innerHTML = '';
+    conf.textContent = '(' + (j.confidence * 100).toFixed(1) + '%)';
+    probs.innerHTML = '';
     var entries = Object.entries(j.probabilities).sort(function (a, b) { return b[1] - a[1]; });
-    entries.forEach(function (entry) {
-      var row = document.createElement('div');
-      row.className = 'bar';
-      row.innerHTML = '<span>' + entry[0] + '</span>' +
-        '<div class="track"><div class="fill"></div></div>' +
-        '<span class="pct">' + (entry[1] * 100).toFixed(1) + '%</span>';
-      bars.appendChild(row);
-      requestAnimationFrame(function () {
-        row.querySelector('.fill').style.width = (entry[1] * 100) + '%';
-      });
+    entries.forEach(function (e) {
+      var li = document.createElement('li');
+      li.textContent = e[0] + ': ' + (e[1] * 100).toFixed(1) + '%';
+      probs.appendChild(li);
     });
     result.classList.add('show');
   } catch (e) {
-    showError('Prediction failed: ' + e.message);
+    alert('Prediction failed: ' + e.message);
   } finally {
     go.disabled = false;
     go.textContent = 'Predict';
